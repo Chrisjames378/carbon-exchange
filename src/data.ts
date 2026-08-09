@@ -295,8 +295,22 @@ export const INITIAL_LEARN_ARTICLES: LearnArticle[] = [
 
 export const INITIAL_MARKETPLACE_OPTIONS: MarketplaceOption[] = [
   {
-    id: 'paypal-cash',
-    title: 'PayPal Cash Transfer',
+    id: 'paypal-cash-5',
+    title: '$5.00 PayPal Cash Deposit',
+    category: 'cash',
+    description: 'Instant micro cash payout transferred directly to your PayPal email account.',
+    creditCost: 50,
+    cashValueUSD: 5.00,
+    iconName: 'Wallet',
+    colorTheme: 'indigo',
+    rateText: '50 Credits = $5.00 USD',
+    badge: 'Quick Cash',
+    redemptionType: 'paypal',
+    detailsPlaceholder: 'user@paypal.com'
+  },
+  {
+    id: 'paypal-cash-10',
+    title: '$10.00 PayPal Cash Transfer',
     category: 'cash',
     description: 'Direct fiat currency cash payout sent directly to your verified PayPal account.',
     creditCost: 100,
@@ -304,7 +318,35 @@ export const INITIAL_MARKETPLACE_OPTIONS: MarketplaceOption[] = [
     iconName: 'Wallet',
     colorTheme: 'indigo',
     rateText: '100 Credits = $10.00 USD',
-    badge: 'Popular Cash-Out',
+    badge: 'Most Popular',
+    redemptionType: 'paypal',
+    detailsPlaceholder: 'user@paypal.com'
+  },
+  {
+    id: 'paypal-cash-25',
+    title: '$25.00 PayPal Express Payout',
+    category: 'cash',
+    description: 'Higher volume cash payout deposited directly to your PayPal wallet.',
+    creditCost: 250,
+    cashValueUSD: 25.00,
+    iconName: 'Wallet',
+    colorTheme: 'indigo',
+    rateText: '250 Credits = $25.00 USD',
+    badge: 'High Value',
+    redemptionType: 'paypal',
+    detailsPlaceholder: 'user@paypal.com'
+  },
+  {
+    id: 'paypal-cash-50',
+    title: '$50.00 PayPal Pro Cash Vault',
+    category: 'cash',
+    description: 'Maximum tier cash transfer credited to your verified PayPal email account.',
+    creditCost: 500,
+    cashValueUSD: 50.00,
+    iconName: 'Wallet',
+    colorTheme: 'indigo',
+    rateText: '500 Credits = $50.00 USD',
+    badge: 'Pro Payout',
     redemptionType: 'paypal',
     detailsPlaceholder: 'user@paypal.com'
   },

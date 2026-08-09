@@ -126,17 +126,35 @@ export const RedeemModal: React.FC<RedeemModalProps> = ({
 
         {/* Dynamic Inputs Based on Redemption Type */}
         {option.redemptionType === 'paypal' && (
-          <div className="space-y-1.5 text-xs">
-            <label className="text-slate-300 font-semibold block">PayPal Account Email Address:</label>
+          <div className="space-y-2 text-xs">
+            <div className="p-3 bg-blue-950/60 border border-blue-500/30 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-xs shadow-sm">
+                  P
+                </div>
+                <div>
+                  <span className="font-bold text-blue-200 block text-xs">PayPal Instant Cash Payout</span>
+                  <span className="text-[10px] text-blue-300/80">Direct USD transfer via PayPal balance</span>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                ${option.cashValueUSD?.toFixed(2) || '10.00'} USD
+              </span>
+            </div>
+
+            <label className="text-slate-300 font-semibold block text-xs">PayPal Email Address for Deposit:</label>
             <input
               type="email"
               value={paypalEmail}
               onChange={(e) => setPaypalEmail(e.target.value)}
-              placeholder="user@paypal.com"
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 transition-all text-xs"
+              placeholder="e.g. yourname@paypal.com"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500 transition-all text-xs"
               autoFocus
             />
-            <p className="text-[10px] text-slate-500">Funds usually deposit within 1-2 business hours.</p>
+            <p className="text-[10px] text-slate-400 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span>Funds deposit directly into your PayPal account within 1-2 business hours.</span>
+            </p>
           </div>
         )}
 

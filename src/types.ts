@@ -1,4 +1,21 @@
-export type AppView = 'exchange' | 'pro' | 'gamification' | 'learn';
+export type AppView = 'exchange' | 'pro' | 'gamification' | 'learn' | 'goals';
+
+export type GoalTimeframe = 'daily' | 'weekly' | 'monthly';
+
+export interface ClimateGoal {
+  id: string;
+  title: string;
+  description?: string;
+  timeframe: GoalTimeframe;
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+  category: 'co2' | 'commute' | 'energy' | 'trees' | 'general';
+  isCompleted: boolean;
+  createdAt: string;
+  deadline?: string;
+  rewardCredits?: number;
+}
 
 export type RedemptionType = 'paypal' | 'tree' | 'voucher' | 'pro' | 'ocean' | 'certificate';
 

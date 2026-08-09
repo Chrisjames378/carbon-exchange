@@ -10,60 +10,142 @@
     <meta name="theme-color" content="#0f172a" />
     <script>
       (function() {
+        function containsExtensionKeywords(str) {
+          if (!str) return false;
+          var s = String(str).toLowerCase();
+          return (
+            s.indexOf('metamask') !== -1 ||
+            s.indexOf('ethereum') !== -1 ||
+            s.indexOf('restoring session') !== -1 ||
+            s.indexOf('failed to connect') !== -1 ||
+            s.indexOf('chrome-extension') !== -1 ||
+            s.indexOf('moz-extension') !== -1 ||
+            s.indexOf('evm') !== -1 ||
+            s.indexOf('inpage') !== -1 ||
+            s.indexOf('wallet') !== -1 ||
+            s.indexOf('web3') !== -1 ||
+            s.indexOf('error restoring') !== -1
+          );
+        }
+
+        function inspect(obj, depth) {
+          if (!obj || depth > 3) return '';
+          if (typeof obj === 'string') return obj;
+          if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
+          var parts = [];
+          try {
+            if (obj.message) parts.push(String(obj.message));
+            if (obj.reason) parts.push(String(obj.reason));
+            if (obj.stack) parts.push(String(obj.stack));
+            if (obj.description) parts.push(String(obj.description));
+            if (obj.name) parts.push(String(obj.name));
+            if (typeof obj.toString === 'function') {
+              try { parts.push(obj.toString()); } catch(e) {}
+            }
+            try {
+              parts.push(JSON.stringify(obj));
+            } catch(e) {}
+            if (typeof obj === 'object') {
+              var keys = Object.getOwnPropertyNames(obj);
+              for (var i = 0; i < keys.length; i++) {
+                var k = keys[i];
+                try {
+                  parts.push(k + ':' + inspect(obj[k], depth + 1));
+                } catch(e) {}
+              }
+            }
+          } catch(e) {}
+          return parts.join(' ');
+        }
+
+        function isExtensionError(args) {
+          try {
+            if (!args) return false;
+            for (var i = 0; i < args.length; i++) {
+              var str = inspect(args[i], 0);
+              if (containsExtensionKeywords(str)) return true;
+            }
+          } catch (e) {}
+          return false;
+        }
+
         try {
           if (typeof window !== 'undefined') {
+            var resolvedRpc = function(args) {
+              var method = args && args.method ? args.method : '';
+              if (method === 'eth_accounts' || method === 'eth_requestAccounts') {
+                return Promise.resolve([]);
+              }
+              if (method === 'eth_chainId') {
+                return Promise.resolve('0x1');
+              }
+              if (method === 'net_version') {
+                return Promise.resolve('1');
+              }
+              return Promise.resolve(null);
+            };
+
+            var dummyEthereum = {
+              isMetaMask: true,
+              isConnected: function() { return false; },
+              request: resolvedRpc,
+              sendAsync: function(payload, cb) {
+                if (cb) cb(null, { jsonrpc: '2.0', id: payload ? payload.id : 1, result: [] });
+                return Promise.resolve([]);
+              },
+              send: function(payload, cb) {
+                if (cb) cb(null, { jsonrpc: '2.0', id: payload ? payload.id : 1, result: [] });
+                return Promise.resolve([]);
+              },
+              enable: function() { return Promise.resolve([]); },
+              on: function() { return dummyEthereum; },
+              removeListener: function() { return dummyEthereum; },
+              removeAllListeners: function() { return dummyEthereum; },
+              autoRefreshOnNetworkChange: false,
+              _state: { isUnlocked: false, initialized: true, isPermanentlyDisconnected: false }
+            };
+
             Object.defineProperty(window, 'ethereum', {
-              get: function() { return undefined; },
-              set: function() {},
+              value: dummyEthereum,
+              writable: false,
+              configurable: true
+            });
+            Object.defineProperty(window, 'web3', {
+              value: { currentProvider: dummyEthereum },
+              writable: false,
               configurable: true
             });
           }
         } catch (e) {}
 
-        function isExtensionError(arg) {
-          if (!arg) return false;
-          let str = '';
-          try {
-            if (typeof arg === 'string') {
-              str = arg;
-            } else if (typeof arg === 'object') {
-              str = (arg.message || '') + ' ' + (arg.reason || '') + ' ' + (arg.stack || '') + ' ' + (arg.description || '') + ' ' + JSON.stringify(arg);
-            } else {
-              str = String(arg);
-            }
-          } catch (e) {
-            str = String(arg);
-          }
-          str = str.toLowerCase();
-          return (
-            str.includes('metamask') ||
-            str.includes('ethereum') ||
-            str.includes('failed to connect') ||
-            str.includes('restoring session') ||
-            str.includes('chrome-extension') ||
-            str.includes('moz-extension')
-          );
-        }
-
-        ['warn', 'error', 'log', 'info', 'debug'].forEach(function(method) {
-          const orig = console[method];
+        ['warn', 'error', 'log', 'info', 'debug', 'trace'].forEach(function(method) {
+          var orig = console[method];
           if (typeof orig === 'function') {
-            console[method] = function(...args) {
-              if (args.some(function(a) { return isExtensionError(a); })) return;
-              orig.apply(console, args);
+            var filteredMethod = function() {
+              if (isExtensionError(arguments)) return;
+              orig.apply(console, arguments);
             };
+            try {
+              Object.defineProperty(console, method, {
+                value: filteredMethod,
+                writable: true,
+                configurable: true
+              });
+            } catch (e) {
+              console[method] = filteredMethod;
+            }
           }
         });
 
         window.addEventListener('unhandledrejection', function(event) {
-          if (isExtensionError(event.reason) || isExtensionError(event.promise)) {
+          if (isExtensionError([event.reason, event.promise])) {
             event.preventDefault();
             event.stopImmediatePropagation();
           }
         }, true);
 
         window.addEventListener('error', function(event) {
-          if (isExtensionError(event.error) || isExtensionError(event.message)) {
+          if (isExtensionError([event.error, event.message])) {
             event.preventDefault();
             event.stopImmediatePropagation();
           }

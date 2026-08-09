@@ -14,8 +14,10 @@ import { CertificateModal } from './components/CertificateModal';
 import { AtmosphereProDashboard } from './components/AtmosphereProDashboard';
 import { GamificationHub } from './components/GamificationHub';
 import { LearnSection } from './components/LearnSection';
+import { ClimateGoals } from './components/ClimateGoals';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
+import { NotificationSettingsModal } from './components/NotificationSettingsModal';
 import { executePayPalPayout } from './services/paypalService';
 
 import {
@@ -24,7 +26,8 @@ import {
   DEFAULT_USER_PROFILE,
   INITIAL_WEEKLY_CHALLENGES,
   INITIAL_ACHIEVEMENTS,
-  INITIAL_LEARN_ARTICLES
+  INITIAL_LEARN_ARTICLES,
+  INITIAL_CLIMATE_GOALS
 } from './data';
 import {
   AppView,
@@ -33,7 +36,8 @@ import {
   UserProfile,
   WeeklyChallenge,
   AchievementBadge,
-  LearnArticle
+  LearnArticle,
+  ClimateGoal
 } from './types';
 
 export default function App() {
@@ -126,12 +130,23 @@ export default function App() {
     }
   });
 
+  // Climate Goals state
+  const [climateGoals, setClimateGoals] = useState<ClimateGoal[]>(() => {
+    try {
+      const saved = localStorage.getItem('atmosphere_climate_goals');
+      return saved ? JSON.parse(saved) : INITIAL_CLIMATE_GOALS;
+    } catch {
+      return INITIAL_CLIMATE_GOALS;
+    }
+  });
+
   // Modals state
   const [selectedOption, setSelectedOption] = useState<MarketplaceOption | null>(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedCertEntry, setSelectedCertEntry] = useState<LedgerEntry | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Sync to localStorage
@@ -142,6 +157,7 @@ export default function App() {
       localStorage.setItem('atmosphere_challenges', JSON.stringify(weeklyChallenges));
       localStorage.setItem('atmosphere_achievements', JSON.stringify(achievements));
       localStorage.setItem('atmosphere_learn_articles', JSON.stringify(learnArticles));
+      localStorage.setItem('atmosphere_climate_goals', JSON.stringify(climateGoals));
       if (userProfile) {
         localStorage.setItem('atmosphere_user_profile', JSON.stringify(userProfile));
       } else {
@@ -150,7 +166,7 @@ export default function App() {
     } catch (e) {
       console.error('Failed to sync to localStorage:', e);
     }
-  }, [userCredits, ledger, weeklyChallenges, achievements, learnArticles, userProfile]);
+  }, [userCredits, ledger, weeklyChallenges, achievements, learnArticles, climateGoals, userProfile]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -316,6 +332,64 @@ export default function App() {
     showToast(`Knowledge Check Passed! +${rewardCredits} Credits awarded!`);
   };
 
+  // Climate Goals Handlers
+  const handleAddClimateGoal = (newGoalData: Omit<ClimateGoal, 'id' | 'createdAt' | 'isCompleted'>) => {
+    const newGoal: ClimateGoal = {
+      ...newGoalData,
+      id: `goal-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      isCompleted: false
+    };
+    setClimateGoals((prev) => [newGoal, ...prev]);
+    showToast(`New ${newGoalData.timeframe} climate goal created!`);
+  };
+
+  const handleUpdateGoalProgress = (goalId: string, addedAmount: number) => {
+    setClimateGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId) return g;
+        const newCurrent = g.currentValue + addedAmount;
+        const isCompleted = newCurrent >= g.targetValue;
+        return {
+          ...g,
+          currentValue: newCurrent,
+          isCompleted: isCompleted ? true : g.isCompleted
+        };
+      })
+    );
+    showToast(`Logged +${addedAmount} progress towards target!`);
+  };
+
+  const handleDeleteClimateGoal = (goalId: string) => {
+    setClimateGoals((prev) => prev.filter((g) => g.id !== goalId));
+    showToast('Climate goal removed.');
+  };
+
+  const handleClaimGoalReward = (goal: ClimateGoal) => {
+    if (!goal.rewardCredits || goal.isCompleted) return;
+
+    setUserCredits((prev) => prev + (goal.rewardCredits || 0));
+
+    const bonusEntry: LedgerEntry = {
+      id: `ledg-${Date.now()}`,
+      title: `Goal Achieved: ${goal.title}`,
+      cost: -(goal.rewardCredits || 0),
+      detail: `Target achieved: ${goal.targetValue} ${goal.unit} (${goal.timeframe})`,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      timestamp: Date.now(),
+      type: 'bonus',
+      status: 'Verified',
+      category: 'bonus'
+    };
+
+    setLedger((prev) => [bonusEntry, ...prev]);
+    setClimateGoals((prev) =>
+      prev.map((g) => (g.id === goal.id ? { ...g, isCompleted: true } : g))
+    );
+
+    showToast(`Target Reward Claimed! +${goal.rewardCredits} Credits!`);
+  };
+
   // Quick Bonus +25
   const handleQuickEarnBonus = () => {
     const newTotal = userCredits + 25;
@@ -377,11 +451,25 @@ export default function App() {
     setUserCredits((prev) => Math.max(0, prev - entryData.cost));
     setLedger((prev) => [newEntry, ...prev]);
 
-    // Check if tree redemption to increment user treesPlantedCount & Forest Guardian quest
+    // Check if tree redemption to increment user treesPlantedCount & Forest Guardian quest & Climate Goals
     if (entryData.category === 'reforestation') {
       setUserProfile((prev) => (prev ? { ...prev, treesPlantedCount: prev.treesPlantedCount + 1 } : prev));
       setWeeklyChallenges((prev) =>
         prev.map((c) => (c.category === 'tree' ? { ...c, currentValue: Math.min(c.targetValue, c.currentValue + 1) } : c))
+      );
+      setClimateGoals((prev) =>
+        prev.map((g) => {
+          if (g.isCompleted) return g;
+          if (g.category === 'trees' || g.unit === 'Trees') {
+            const newCurrent = g.currentValue + 1;
+            return {
+              ...g,
+              currentValue: newCurrent,
+              isCompleted: newCurrent >= g.targetValue
+            };
+          }
+          return g;
+        })
       );
     }
   };
@@ -410,7 +498,24 @@ export default function App() {
       })
     );
 
-    showToast(`+${creditsToAdd} Eco Credits logged & verified!`);
+    // Auto-update matching active Climate Goals
+    setClimateGoals((prev) =>
+      prev.map((g) => {
+        if (g.isCompleted) return g;
+        if (g.unit === 'kg CO₂' || g.category === 'co2' || g.category === 'commute' || g.category === 'energy') {
+          const added = 2.5;
+          const newCurrent = g.currentValue + added;
+          return {
+            ...g,
+            currentValue: newCurrent,
+            isCompleted: newCurrent >= g.targetValue
+          };
+        }
+        return g;
+      })
+    );
+
+    showToast(`+${creditsToAdd} Eco Credits logged & Climate Goals updated!`);
   };
 
   return (
@@ -431,6 +536,7 @@ export default function App() {
         user={userProfile}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenNotifications={() => setIsNotificationModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -473,6 +579,18 @@ export default function App() {
           <LearnSection
             articles={learnArticles}
             onCompleteArticleQuiz={handleCompleteArticleQuiz}
+          />
+        </main>
+      )}
+
+      {currentView === 'goals' && (
+        <main className="space-y-6 animate-in fade-in duration-200">
+          <ClimateGoals
+            goals={climateGoals}
+            onAddGoal={handleAddClimateGoal}
+            onUpdateGoalProgress={handleUpdateGoalProgress}
+            onDeleteGoal={handleDeleteClimateGoal}
+            onClaimGoalReward={handleClaimGoalReward}
           />
         </main>
       )}
@@ -520,6 +638,12 @@ export default function App() {
           onSignOut={handleSignOutUser}
         />
       )}
+
+      <NotificationSettingsModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
+        onShowToast={showToast}
+      />
 
       {/* Footer */}
       <footer className="mt-8 pt-4 text-center text-xs text-slate-400 border-t border-slate-800/80 space-y-1">

@@ -9,7 +9,9 @@ import {
   User,
   Sparkles,
   Flame,
-  Radio
+  Radio,
+  Target,
+  Bell
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -19,6 +21,7 @@ interface HeaderProps {
   user: UserProfile | null;
   onOpenAuth: () => void;
   onOpenProfile: () => void;
+  onOpenNotifications: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,7 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
   totalCredits,
   user,
   onOpenAuth,
-  onOpenProfile
+  onOpenProfile,
+  onOpenNotifications
 }) => {
   return (
     <header className="glass-card p-4 sm:p-5 rounded-3xl shadow-xl border border-white/10 space-y-4">
@@ -58,8 +62,19 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* User Account Bar */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        {/* User Account & Notifications Bar */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+          {/* Notification Settings Bell */}
+          <button
+            onClick={onOpenNotifications}
+            className="p-2.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-300 rounded-2xl transition-all shadow-sm cursor-pointer relative"
+            title="Notification & Reminder Settings"
+            id="btn-notification-settings"
+          >
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
+
           {user ? (
             <button
               onClick={onOpenProfile}
@@ -122,6 +137,19 @@ export const Header: React.FC<HeaderProps> = ({
           <Trophy className="w-4 h-4 text-amber-300" />
           <span>Quests & Gamification</span>
           <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+        </button>
+
+        <button
+          onClick={() => setCurrentView('goals')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            currentView === 'goals'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20 border border-emerald-400/30'
+              : 'bg-slate-900/80 text-slate-300 hover:text-white border border-slate-800'
+          }`}
+          id="nav-tab-goals"
+        >
+          <Target className="w-4 h-4 text-emerald-300" />
+          <span>Climate Goals</span>
         </button>
 
         <button

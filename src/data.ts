@@ -5,7 +5,8 @@ import {
   UserProfile,
   WeeklyChallenge,
   AchievementBadge,
-  LearnArticle
+  LearnArticle,
+  ClimateGoal
 } from './types';
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
@@ -475,6 +476,61 @@ export const INITIAL_LEDGER: LedgerEntry[] = [
     type: 'bonus',
     status: 'Verified',
     category: 'bonus'
+  }
+];
+
+export const INITIAL_CLIMATE_GOALS: ClimateGoal[] = [
+  {
+    id: 'goal-daily-commute',
+    title: 'Daily Green Commute Target',
+    description: 'Reduce daily transportation emissions by walking, cycling, or using public transit.',
+    timeframe: 'daily',
+    targetValue: 3.5,
+    currentValue: 2.5,
+    unit: 'kg CO₂',
+    category: 'commute',
+    isCompleted: false,
+    createdAt: new Date().toISOString(),
+    rewardCredits: 15
+  },
+  {
+    id: 'goal-weekly-offset',
+    title: 'Weekly 25kg Carbon Reduction Goal',
+    description: 'Save 25kg of carbon emissions this week through combined eco actions and solar usage.',
+    timeframe: 'weekly',
+    targetValue: 25.0,
+    currentValue: 18.2,
+    unit: 'kg CO₂',
+    category: 'co2',
+    isCompleted: false,
+    createdAt: new Date().toISOString(),
+    rewardCredits: 50
+  },
+  {
+    id: 'goal-monthly-trees',
+    title: 'Monthly Reforestation Target',
+    description: 'Redeem credits to fund or plant 3 native trees this month.',
+    timeframe: 'monthly',
+    targetValue: 3,
+    currentValue: 1,
+    unit: 'Trees',
+    category: 'trees',
+    isCompleted: false,
+    createdAt: new Date().toISOString(),
+    rewardCredits: 100
+  },
+  {
+    id: 'goal-monthly-energy',
+    title: 'Monthly Household Energy Savings',
+    description: 'Conserve energy and cut monthly electric grid carbon output.',
+    timeframe: 'monthly',
+    targetValue: 80.0,
+    currentValue: 80.0,
+    unit: 'kg CO₂',
+    category: 'energy',
+    isCompleted: true,
+    createdAt: new Date().toISOString(),
+    rewardCredits: 120
   }
 ];
 

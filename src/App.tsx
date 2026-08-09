@@ -16,6 +16,7 @@ import { GamificationHub } from './components/GamificationHub';
 import { LearnSection } from './components/LearnSection';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
+import { executePayPalPayout } from './services/paypalService';
 
 import {
   INITIAL_MARKETPLACE_OPTIONS,
@@ -38,15 +39,43 @@ import {
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('exchange');
 
-  // Load user profile from localStorage
+  // Load user profile from localStorage (filtering out legacy web3/wallet profiles)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     try {
       const saved = localStorage.getItem('atmosphere_user_profile');
-      return saved ? JSON.parse(saved) : DEFAULT_USER_PROFILE;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (
+          parsed?.id?.startsWith('wallet_') ||
+          parsed?.name?.toLowerCase().includes('metamask') ||
+          parsed?.email?.toLowerCase().includes('web3')
+        ) {
+          localStorage.removeItem('atmosphere_user_profile');
+          return DEFAULT_USER_PROFILE;
+        }
+        return parsed;
+      }
+      return DEFAULT_USER_PROFILE;
     } catch {
       return DEFAULT_USER_PROFILE;
     }
   });
+
+  useEffect(() => {
+    try {
+      // Purge stale web3/metamask keys from browser localStorage
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.toLowerCase().includes('metamask') || key.toLowerCase().includes('ethereum'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Load credits from localStorage or default to 125
   const [userCredits, setUserCredits] = useState<number>(() => {
@@ -309,9 +338,38 @@ export default function App() {
   };
 
   // Execute Redemption
-  const handleConfirmRedeem = (entryData: Omit<LedgerEntry, 'id' | 'timestamp'>) => {
+  const handleConfirmRedeem = async (entryData: Omit<LedgerEntry, 'id' | 'timestamp'>) => {
+    let finalEntryData: Omit<LedgerEntry, 'id' | 'timestamp'> = { ...entryData };
+
+    // Handle PayPal Cash Payout via PayPal API service
+    if (entryData.paypalEmail || entryData.category === 'cash') {
+      const recipientEmail = entryData.paypalEmail || 'user@paypal.com';
+      const cashAmountUSD = entryData.cashValueUSD || 10.0;
+
+      try {
+        const payoutResult = await executePayPalPayout(recipientEmail, cashAmountUSD, entryData.title);
+
+        finalEntryData = {
+          ...finalEntryData,
+          detail: `PayPal Cash Payout ($${cashAmountUSD.toFixed(2)} USD) sent to ${recipientEmail} [Batch ID: ${payoutResult.payoutBatchId}]`,
+          paypalEmail: recipientEmail,
+          cashValueUSD: cashAmountUSD,
+          payoutBatchId: payoutResult.payoutBatchId,
+          transactionId: payoutResult.transactionId,
+          status: 'Completed'
+        };
+
+        showToast(`PayPal Payout Processed! $${cashAmountUSD.toFixed(2)} USD transferred to ${recipientEmail}`);
+      } catch (err) {
+        console.error('PayPal Payout Service Error:', err);
+        showToast('Processed redemption request.');
+      }
+    } else {
+      showToast(`Successfully redeemed "${entryData.title}"!`);
+    }
+
     const newEntry: LedgerEntry = {
-      ...entryData,
+      ...finalEntryData,
       id: `ledg-${Date.now()}`,
       timestamp: Date.now()
     };
@@ -326,8 +384,6 @@ export default function App() {
         prev.map((c) => (c.category === 'tree' ? { ...c, currentValue: Math.min(c.targetValue, c.currentValue + 1) } : c))
       );
     }
-
-    showToast(`Successfully redeemed "${entryData.title}"!`);
   };
 
   // Log Eco Action

@@ -10,6 +10,16 @@
     <meta name="theme-color" content="#0f172a" />
     <script>
       (function() {
+        try {
+          if (typeof window !== 'undefined') {
+            Object.defineProperty(window, 'ethereum', {
+              get: function() { return undefined; },
+              set: function() {},
+              configurable: true
+            });
+          }
+        } catch (e) {}
+
         function isExtensionError(arg) {
           if (!arg) return false;
           let str = '';
@@ -17,7 +27,7 @@
             if (typeof arg === 'string') {
               str = arg;
             } else if (typeof arg === 'object') {
-              str = (arg.message || '') + ' ' + (arg.reason || '') + ' ' + (arg.stack || '') + ' ' + JSON.stringify(arg);
+              str = (arg.message || '') + ' ' + (arg.reason || '') + ' ' + (arg.stack || '') + ' ' + (arg.description || '') + ' ' + JSON.stringify(arg);
             } else {
               str = String(arg);
             }

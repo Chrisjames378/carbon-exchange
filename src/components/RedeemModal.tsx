@@ -77,7 +77,9 @@ export const RedeemModal: React.FC<RedeemModalProps> = ({
       type: 'redemption',
       certificateId: certId,
       status: 'Completed',
-      category: option.category
+      category: option.category,
+      paypalEmail: option.redemptionType === 'paypal' ? paypalEmail.trim() : undefined,
+      cashValueUSD: option.cashValueUSD
     });
 
     onClose();
@@ -126,23 +128,30 @@ export const RedeemModal: React.FC<RedeemModalProps> = ({
 
         {/* Dynamic Inputs Based on Redemption Type */}
         {option.redemptionType === 'paypal' && (
-          <div className="space-y-2 text-xs">
-            <div className="p-3 bg-blue-950/60 border border-blue-500/30 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-xs shadow-sm">
+          <div className="space-y-2.5 text-xs">
+            <div className="p-3 bg-blue-950/70 border border-blue-500/30 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-sm shadow-md">
                   P
                 </div>
                 <div>
-                  <span className="font-bold text-blue-200 block text-xs">PayPal Instant Cash Payout</span>
-                  <span className="text-[10px] text-blue-300/80">Direct USD transfer via PayPal balance</span>
+                  <span className="font-bold text-blue-100 block text-xs">PayPal Express Cash Deposit</span>
+                  <span className="text-[10px] text-blue-300/80">Direct USD cash deposit via PayPal API</span>
                 </div>
               </div>
-              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
                 ${option.cashValueUSD?.toFixed(2) || '10.00'} USD
               </span>
             </div>
 
-            <label className="text-slate-300 font-semibold block text-xs">PayPal Email Address for Deposit:</label>
+            <div className="p-2.5 bg-slate-900/90 rounded-xl border border-blue-500/20 flex items-center gap-2 text-[11px] text-blue-200">
+              <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>
+                Secured with <strong>PAYPAL_CLIENT_ID</strong> & <strong>PAYPAL_SECRET_KEY</strong> API credentials.
+              </span>
+            </div>
+
+            <label className="text-slate-300 font-semibold block text-xs">PayPal Email Address for Cash Deposit:</label>
             <input
               type="email"
               value={paypalEmail}
@@ -152,8 +161,7 @@ export const RedeemModal: React.FC<RedeemModalProps> = ({
               autoFocus
             />
             <p className="text-[10px] text-slate-400 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-              <span>Funds deposit directly into your PayPal account within 1-2 business hours.</span>
+              <span>Funds deposit directly into your verified PayPal account balance within 1-2 business hours.</span>
             </p>
           </div>
         )}

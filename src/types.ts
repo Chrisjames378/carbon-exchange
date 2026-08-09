@@ -31,6 +31,10 @@ export interface LedgerEntry {
   certificateId?: string;
   status: 'Completed' | 'Processing' | 'Verified';
   category?: string;
+  paypalEmail?: string;
+  cashValueUSD?: number;
+  payoutBatchId?: string;
+  transactionId?: string;
 }
 
 export interface EcoActionOption {

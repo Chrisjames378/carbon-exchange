@@ -1,0 +1,6 @@
+{
+  "name": "Atmosphere Carbon Exchange",
+  "description": "Monetize and redeem your earned eco impact carbon credits for cash transfers, native tree planting, gift vouchers, and premium access.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Atmosphere Carbon Exchange & Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0f172a" />
+    <script>
+      (function() {
+        function isExtensionError(arg) {
+          if (!arg) return false;
+          let str = '';
+          try {
+            if (typeof arg === 'string') {
+              str = arg;
+            } else if (typeof arg === 'object') {
+              str = (arg.message || '') + ' ' + (arg.reason || '') + ' ' + (arg.stack || '') + ' ' + JSON.stringify(arg);
+            } else {
+              str = String(arg);
+            }
+          } catch (e) {
+            str = String(arg);
+          }
+          str = str.toLowerCase();
+          return (
+            str.includes('metamask') ||
+            str.includes('ethereum') ||
+            str.includes('failed to connect') ||
+            str.includes('restoring session') ||
+            str.includes('chrome-extension') ||
+            str.includes('moz-extension')
+          );
+        }
+
+        ['warn', 'error', 'log', 'info', 'debug'].forEach(function(method) {
+          const orig = console[method];
+          if (typeof orig === 'function') {
+            console[method] = function(...args) {
+              if (args.some(function(a) { return isExtensionError(a); })) return;
+              orig.apply(console, args);
+            };
+          }
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+          if (isExtensionError(event.reason) || isExtensionError(event.promise)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        window.addEventListener('error', function(event) {
+          if (isExtensionError(event.error) || isExtensionError(event.message)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
+  </head>
+  <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
